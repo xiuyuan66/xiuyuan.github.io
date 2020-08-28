@@ -87,7 +87,7 @@ const Component = () => {
   )
 };
 ```
-![img](https://github.com/workerxuan/Blog/blob/master/assets/event/pattern.png?raw=true)
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/useEffect1.gif?raw=true)
 ```javascript
   import React, { useState, useEffect } from 'react';
   import { Button, message } from "antd";
