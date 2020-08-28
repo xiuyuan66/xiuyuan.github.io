@@ -88,6 +88,8 @@ const Component = () => {
 };
 ```
 ![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/useEffect1.gif?raw=true)
+
+上面代码可以看出，每个React组件初始化时，DOM都会渲染一次，useEffect在渲染结束后执行，如果 useEffect 第二个参数数组内的值发生了变化，那么 useEffect 第一个参数的回调将会被再执行一遍。
 ```javascript
   import React, { useState, useEffect } from 'react';
   import { Button, message } from "antd";
