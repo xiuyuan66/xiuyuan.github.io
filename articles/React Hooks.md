@@ -63,13 +63,84 @@ Hooks 名称统一约定以 use 前缀开头（比如 usexxx），因为 React �
 
 ```
 ## useEffect
+顾名思义，执行副作用钩子。主要用于以下两种情况：
+
+- 函数式组件中不存在传统类组件生命周期的概念，如果我们需要在一些特定的生命周期或者值变化后做一些操作的话，必须借助  useEffect  的一些特性去实现。
+
+- useState  产生的 changeState 方法并没有提供类似于  setState  的第二个参数一样的功能，因此如果需要在 State 改变后执行一些方法，必须通过  useEffect  实现。
+
+该钩子接受两个参数，第一个参数为副作用需要执行的回调，生成的回调方法可以返回一个函数（将在组件卸载时运行）；第二个为该副作用监听的状态数组，当对应状态发生变动时会执行副作用，如果第二个参数为空，那么在每一个 State 变化时都会执行该副作用。
+
 ```javascript
+import React, { useState, useEffect } from "react";
+import { Button, message } from "antd";
+const Component = () => {
+  const [count, setCount] = useState(0);
   useEffect(() => {
-    console.log(count);
+    message.info(`组件挂载,最新值${count}`);
   }, [count]);
+  return (
+    <div>
+      <div>{count}</div>
+      <Button onClick={() => setCount(count + 1)}>click</Button>
+    </div>
+  )
+};
+```
+![img](https://github.com/workerxuan/Blog/blob/master/assets/event/pattern.png?raw=true)
+```javascript
+  import React, { useState, useEffect } from 'react';
+  import { Button, message } from "antd";
+  let timer = null;
+  const Component = ({ visible }) => {
+    useEffect(() => {
+      timer = setInterval(() => {
+        // events ...
+        message.info(`组件挂载`);
+      }, 1000);
+
+      return () => {
+        // 类似 componentWillUnmount
+        // unmount events ...
+        message.info(`组件卸载`);
+        clearInterval(timer); // 组件卸载 移除计时器
+      };
+    }, []);
+    return visible ? 'true' : 'false';
+  };
+  const ParentDemo = () => {
+    const [visible, changeVisible] = useState(true);
+    return (
+      <div>
+        {
+          visible && <Component visible={visible} />
+        }
+        <button onClick={() => { changeVisible(!visible); }}>
+          改变visible
+        </button>
+      </div>
+    );
+
+  }
+  // ...
+}
 
 ```
 ```javascript
+import React, { useState, useEffect } from "react";
+import { Button, message } from "antd";
+const Component = () => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    message.info(`组件挂载,最新值${count}`);
+  }, [count]);
+  return (
+    <div>
+      <div>{count}</div>
+      <Button onClick={() => setCount(count + 1)}>click</Button>
+    </div>
+  )
+};
   function Counter() {
     const [count, setCount] = useState(0);
     useEffect(() => {
