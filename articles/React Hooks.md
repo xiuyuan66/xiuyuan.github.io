@@ -89,18 +89,21 @@ const Component = () => {
 ```
 ![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/useEffect1.gif?raw=true)
 
-上面代码可以看出，每个React组件初始化时，DOM都会渲染一次，useEffect在渲染结束后执行，如果 useEffect 第二个参数数组内的值发生了变化，那么 useEffect 第一个参数的回调将会被再执行一遍。
+上面代码可以看出，每个`React`组件初始化时，`DOM`都会渲染一次，`useEffect`在渲染结束后执行，如果 `useEffect` 第二个参数数组内的值发生了变化，那么 `useEffect` 第一个参数的回调将会被再执行一遍。
+
+如果副作用存在返回函数，那么返回的函数将在卸载时运行。如果第二个参数为空数组时，不管其他状态怎么变化，此时`useEffect`都不会再次执行，接下来让我们来实践一下：
 ```javascript
   import React, { useState, useEffect } from 'react';
   import { Button, message } from "antd";
   let timer = null;
   const Component = ({ visible }) => {
+    const [count, setCount] = useState(0);
     useEffect(() => {
       timer = setInterval(() => {
         // events ...
         message.info(`组件挂载`);
       }, 1000);
-
+      message.info(`执行一次`);
       return () => {
         // 类似 componentWillUnmount
         // unmount events ...
@@ -108,7 +111,12 @@ const Component = () => {
         clearInterval(timer); // 组件卸载 移除计时器
       };
     }, []);
-    return visible ? 'true' : 'false';
+    return (
+      <div>
+        <div>{count}</div>
+        <Button onClick={() => setCount(count + 1)}>click</Button>
+      </div>
+    );
   };
   const ParentDemo = () => {
     const [visible, changeVisible] = useState(true);
@@ -128,6 +136,25 @@ const Component = () => {
 }
 
 ```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/effect.gif?raw=true)
+
+如果第二个参数为空，那么在每一个 State 变化时都会执行该副作用,注意这里说的参数为空是说不传递第二个参数，而不是上面说的参数为空数组
+
+```javascript
+const Components = () => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    message.info(`每次状态更新,最新值${count}`);
+  });
+  return (
+    <div>
+      <div>{count}</div>
+      <Button onClick={() => setCount(count + 1)}>click</Button>
+    </div>
+  );
+};
+```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/effectEmpty.gif?raw=true)
 ```javascript
 import React, { useState, useEffect } from "react";
 import { Button, message } from "antd";
