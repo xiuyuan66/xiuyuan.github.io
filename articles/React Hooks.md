@@ -227,10 +227,65 @@ const Component = () => {
 
 ```
 ## useCallback
+官方文档：
+
+`Pass an inline callback and an array of dependencies. useCallback will return a memoized version of the callback that only changes if one of the dependencies has changed.`
+
+意思就是缓存一个函数，当其中一个依赖项更改时才更改，返回一个新的函数。
+
+使用场景是：有一个父组件，其中包含子组件，子组件接收一个函数作为props；通常而言，如果父组件更新了，子组件也会执行更新；但是大多数场景下，更新是没有必要的，我们可以借助useCallback来返回函数，然后把这个函数作为props传递给子组件；这样，子组件就能避免不必要的更新。
 ```javascript
-  function useCallback(callback, args) {
-    return useMemo(() => callback, args);
-  }
+const Components = () => {
+  const [count, setCount] = useState(1);
+    const [val, setVal] = useState('');
+    const callback = useCallback(() => {
+        console.log(count);
+    }, [count]);
+    set.add(callback);
+
+    return <div>
+        <div>{count}</div>
+        <div>{set.size}</div>
+        <div>
+            <button onClick={() => setCount(count + 1)}>+</button>
+            <input value={val} onChange={event => setVal(event.target.value)}/>
+        </div>
+    </div>;
+
+};
+
+const Parent =() => {
+    const [count, setCount] = useState(1);
+    const [val, setVal] = useState(0);
+ 
+    const callback = useCallback(() => {
+        return count;
+    }, [count]);
+    return(
+      <div>
+        <h4>val:{val}</h4>
+        <h4>count:{count}</h4>
+        <Child callback={callback}/>
+        <div>
+            <Button onClick={() => setCount(count + 1)}>count</Button>
+            <Button onClick={() => setVal(val + 1)}>val</Button>
+        </div>
+      </div>;
+    ) 
+}
+ 
+const Child =({ callback }) => {
+    const [count, setCount] = useState(() => callback());
+    useEffect(() => {
+        setCount(callback());
+    }, [callback]);
+    return(
+      <div>
+        ChildCount:{count}
+      </div>
+    ) 
+}
+ 
 ```
 ```javascript
   function Counter() {
