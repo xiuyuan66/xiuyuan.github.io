@@ -286,6 +286,37 @@ const Child =({ callback }) => {
     ) 
 }
  
+
+ const Child = React.memo(function ({ val, type, onChange }) {
+  console.log("render...");
+  message.info(`${type}组件render${val}`);
+
+  return (
+    <>
+      <Button onClick={onChange}>{type}Child</Button>
+    </>
+  );
+});
+
+function App() {
+  const [val1, setVal1] = useState(0);
+  const [val2, setVal2] = useState(0);
+
+  const onChange1 = useCallback(() => {
+    setVal1(val1 + 1);
+  }, []);
+
+  const onChange2 = useCallback(() => {
+    setVal2(val2 + 1);
+  }, [val2]);
+
+  return (
+    <>
+      <Child type={"first"} val={val1} onChange={onChange1} />
+      <Child type={"sec"} val={val2} onChange={onChange2} />
+    </>
+  );
+}
 ```
 ```javascript
   function Counter() {
