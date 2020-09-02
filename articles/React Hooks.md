@@ -187,45 +187,67 @@ const Component = () => {
 
 ```
 ## useMemo
+`useMemo` 类似于 `useCallback`，`useMemo`缓存返回值。它接收两个参数，第一个参数为有返回值的函数（返回值可以是任何类型），第二个参数是依赖项(数组)，当依赖项中某一个发生变化，结果将会重新调用函数生成新的返回值。
+
+下面直接举个例子：
+
 ```javascript
-  function Counter() {
-    const [count, setCount] = useState(0);
-    const computed = () => {
-      console.log('我执行了');
-      return count * 10 - 2;
-    }
-    const sum = useMemo(computed, [count]);
+  const Demo =()=> {
+    const [count1, setCount1] = useState(0);
+    const [count2, setCount2] = useState(10);
+
+    const calculateCount = useMemo(() => {
+      message.info('重新计算结果');
+      let sum = 0;
+      for (let i = 0; i < count1 * 10; i++) {
+          sum += i;
+      }
+      return sum;
+
+    }, [count1]);
     return (
       <div>
-        <div>{count} * 10 - 2 = {sum}</div>
-        <button onClick={() => setCount(count + 1)}>
-          点击
-        </button>
+        {calculateCount}
+        <Button onClick={() => { setCount1(count1 + 1); }}>改变count1</Button>
+        <Button onClick={() => { setCount2(count2 + 1); }}>改变count2</Button>
       </div>
     );
   }
 
-
 ```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/memo1.gif?raw=true)
+
+可以看到useMemo 与 useCallback 很像，只有依赖值改变才会重新调用函数，useMemo 也能针对传入子组件的值进行缓存优化。前面说过返回值可以是任何类型，因此，如果我们将函数的返回值替换为一个组件，那么就可以实现对组件挂载/重新挂载的性能优化。
+
 ```javascript
-  let _deps = {
-    args: []
-  }; // _deps 记录 useMemo 上一次的 依赖
-  function useMemo(callback, args) {
-    const hasChangedDeps = args.some((arg, index) => arg !== _deps.args[index]); // 两次的 dependencies 是否完全相等
-    // 如果 dependencies 不存在，或者 dependencies 有变化
-    if (!_deps.args || hasChangedDeps) {
-      _deps.args = args;
-      _deps._callback = callback;
-      _deps.value = callback();
-      return _deps.value;
-    }
+  const Child = ({ val }) => {
+    return (
+      <>
+        <p>当前值：{val}</p>
+      </>
+    );
+  };
+  const Demo = () => {
+    const [count1, setCount1] = useState(0);
+    const [count2, setCount2] = useState(6);
 
-    return _deps.value;
-  }
+    const child = useMemo(() => {
+      message.info("重新生成Child组件");
+      return <Child val={count1} />;
+    }, [count1]);
 
+    return (
+      <div>
+        {child}
+        <Button onClick={() => { setCount1(count1 + 1); }}>改变count1</Button>
+        <Button onClick={() => { setCount2(count2 + 1); }}>改变count2</Button>
+      </div>
+    );
+  };
 
 ```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/memo2.gif?raw=true)
+
 ## useCallback
 官方文档：
 
@@ -235,103 +257,91 @@ const Component = () => {
 
 使用场景是：有一个父组件，其中包含子组件，子组件接收一个函数作为props；通常而言，如果父组件更新了，子组件也会执行更新；但是大多数场景下，更新是没有必要的，我们可以借助useCallback来返回函数，然后把这个函数作为props传递给子组件；这样，子组件就能避免不必要的更新。
 ```javascript
-const Components = () => {
-  const [count, setCount] = useState(1);
-    const [val, setVal] = useState('');
-    const callback = useCallback(() => {
-        console.log(count);
-    }, [count]);
-    set.add(callback);
 
-    return <div>
-        <div>{count}</div>
-        <div>{set.size}</div>
-        <div>
-            <button onClick={() => setCount(count + 1)}>+</button>
-            <input value={val} onChange={event => setVal(event.target.value)}/>
-        </div>
-    </div>;
+  const Child = React.memo(function ({ val, type, onChange }) {
+    console.log("render...");
+    message.info(`${type}组件render${val}`);
 
-};
-
-const Parent =() => {
-    const [count, setCount] = useState(1);
-    const [val, setVal] = useState(0);
- 
-    const callback = useCallback(() => {
-        return count;
-    }, [count]);
-    return(
-      <div>
-        <h4>val:{val}</h4>
-        <h4>count:{count}</h4>
-        <Child callback={callback}/>
-        <div>
-            <Button onClick={() => setCount(count + 1)}>count</Button>
-            <Button onClick={() => setVal(val + 1)}>val</Button>
-        </div>
-      </div>;
-    ) 
-}
- 
-const Child =({ callback }) => {
-    const [count, setCount] = useState(() => callback());
-    useEffect(() => {
-        setCount(callback());
-    }, [callback]);
-    return(
-      <div>
-        ChildCount:{count}
-      </div>
-    ) 
-}
- 
-
- const Child = React.memo(function ({ val, type, onChange }) {
-  console.log("render...");
-  message.info(`${type}组件render${val}`);
-
-  return (
-    <>
-      <Button onClick={onChange}>{type}Child</Button>
-    </>
-  );
-});
-
-function App() {
-  const [val1, setVal1] = useState(0);
-  const [val2, setVal2] = useState(0);
-
-  const onChange1 = useCallback(() => {
-    setVal1(val1 + 1);
-  }, []);
-
-  const onChange2 = useCallback(() => {
-    setVal2(val2 + 1);
-  }, [val2]);
-
-  return (
-    <>
-      <Child type={"first"} val={val1} onChange={onChange1} />
-      <Child type={"sec"} val={val2} onChange={onChange2} />
-    </>
-  );
-}
-```
-```javascript
-  function Counter() {
-    const [count, setCount] = useState(0);
-    useEffect(() => {
-    console.log(count);
-    }, [count]);
     return (
-    <div>
-      <div>{count}</div>
-      <button onClick={() => setCount(count + 1)}>
-        点击
-      </button>
-    </div>
+      <>
+        <Button onClick={onChange}>{type}Child</Button>
+      </>
+    );
+  });
+
+  const Parent = () => {
+    const [val1, setVal1] = useState(0);
+    const [val2, setVal2] = useState(0);
+    const [val3, setVal3] = useState(0);
+
+    const onChange1 = useCallback(() => {
+      setVal1(val1 + 1);
+    }, [val1]);
+    const onChange2 = useCallback(() => {
+      setVal2(val2 + 1);
+    }, [val2]);
+    //普通函数
+    const onChange3 = () => {
+      setVal3(val3 + 1);
+    }
+    return (
+      <>
+        <Child type={"first"} val={val1} onChange={onChange1} />
+        <Child type={"sec"} val={val2} onChange={onChange2} />
+        <Child type={"trd"} val={val3} onChange={onChange3} />
+      </>
+    );
+  }
+```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/cb1.gif?raw=true)
+
+可以看出当点击`trdChild`的时候只会更新`trdChild`，而当点击`firstChild`和`secChild`的时候，更新当前点击的组件同时会更新`trdChild`，这就表示当其他组件更新的时候会导致`trdChild`重新渲染。
+
+注意到子组件使用了 `React.memo` 这个方法，此方法内会对 `props` 做一个浅层比较，如果 `props` 没有发生改变，则不会重新渲染此组件。
+
+```javascript
+  true === true // true
+  false === false // true
+  1 === 1 // true
+  'a' === 'a' // true
+
+  {} === {} // false
+  [] === [] // false
+  () => {} === () => {} // false
+
+  const b = {}
+  b === b // true
+```
+上述代码说明了为什么`trdChild`每次都更新，因为`onChange3`每次都是一个新的函数，尽管长得一样，但是引用是不一样的，而`useCallback`只有在依赖项变化的时候才会返回一个新的函数，所以`React.memo` 对比后发现对象 `props` 改变，就重新渲染了。
+
+有人可能要问如果`useCallback`的第二个参数是个空数组会怎么样呢？下面我们实践一下：
+```javascript
+  const Child = React.memo(function ({ val, type, onChange }) {
+    console.log("render...");
+    message.info(`${type}组件render${val}`);
+
+    return (
+      <>
+        <Button onClick={onChange}>{type}Child</Button>
+      </>
+    );
+  });
+
+  const Parent = () => {
+    const [val1, setVal1] = useState(0);
+    const onChange1 = useCallback(() => {
+      setVal1(val1 + 1);
+    }, []);
+    return (
+      <>
+        <Child type={"first"} val={val1} onChange={onChange1} />
+      </>
     );
   }
 
 ```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/cb2.gif?raw=true)
+
+可以看到当`useCallback`的依赖参数为一个空数组，代表着这个方法没有依赖值，将不会被更新。且由于`useCallback`自带闭包，函数内`val1`一直都是`0`。
+
+当点击多次`firstChild`时，会发现组件只更新一次，就是因为函数内的`val1`永远都是0，所以`setVal1(0 + 1)`,`props`每次接收的值都是1，而`onChange1`没有依赖项不会返回新的函数，`Child`只会因为val1改变而更新一次继而不会再重新渲染。
