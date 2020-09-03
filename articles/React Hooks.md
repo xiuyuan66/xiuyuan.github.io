@@ -345,3 +345,60 @@ const Component = () => {
 可以看到当`useCallback`的依赖参数为一个空数组，代表着这个方法没有依赖值，将不会被更新。且由于`useCallback`自带闭包，函数内`val1`一直都是`0`。
 
 当点击多次`firstChild`时，会发现组件只更新一次，就是因为函数内的`val1`永远都是0，所以`setVal1(0 + 1)`,`props`每次接收的值都是1，而`onChange1`没有依赖项不会返回新的函数，`Child`只会因为val1改变而更新一次继而不会再重新渲染。
+
+## useRef
+useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传入的参数（initialValue）。返回的 ref 对象在组件的整个生命周期内保持不变。
+
+根据官网描述，useRef大概有两种用途：
+- 访问DOM节点
+- 保存可变量
+
+废话不多说，直接上例子：
+```javascript
+  const Demo = () => {
+    const [count1, setCount1] = useState(0);
+    //创建初始值为count1的preCount1
+    const preCount1 = useRef(count1);
+    useEffect(() => {
+      //保存最新的count1
+      preCount1.current = count1
+    });
+
+    return (
+      <div>
+        <p>now: {count1}  ,  pre: {preCount1.current}</p> 
+        <Button
+          onClick={() => {
+            setCount1(count1 + 1);
+          }}
+        >
+          改变count1
+        </Button>
+      </div>
+    );
+  }
+```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/ref.gif?raw=true)
+
+可以看出`useRef` 配合  `useEffect` 可以实现 `preProps` 的功能。 这是因为`useRef`保存的变量不会随着每次数据的变化重新生成，而是保持在我们最后一次赋值时的状态。
+```javascript
+  const Demo = () => {
+    const inputEl = useRef(null);
+    const onButtonClick = () => {
+      // `current` 指向已挂载到 DOM 上的文本输入元素
+      inputEl.current.focus();
+    };
+    return (
+      <>
+        <input ref={inputEl} type="text" />
+        <button onClick={onButtonClick}>Focus the input</button>
+      </>
+    );
+  }
+```
+![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/ref2.gif?raw=true)
+
+代码中`useRef`创建了`inputEl`，并赋给了`input`的`ref`属性，点击 `button` 的时候`inputEl.current.focus()` 使`input` 获取焦点。
+
+### 注意
+当 `useRef` 的对象内容发生变化时,它不会通知你。变更 `.current` 属性不会引发组件重新渲染。因为他一直是一个引用。
