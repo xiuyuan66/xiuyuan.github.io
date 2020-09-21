@@ -236,7 +236,7 @@ export function eventsMixin (Vue: Class<Component>) {
 
 ## 拓展
 ### 浅谈观察者模式与发布-订阅模式
-![img](https://github.com/workerxuan/Blog/blob/master/assets/event/pattern.png?raw=true) 
+![img](https://github.com/xiuyuan66/Blog/blob/master/assets/event/pattern.png?raw=true) 
 ### 观察者模式
 观察者（`Observer`）直接订阅（`Subscribe`）主题（`Subject`），而当主题被激活的时候，会触发（`Fire Event`）观察者里的事件。
 ### 发布-订阅模式

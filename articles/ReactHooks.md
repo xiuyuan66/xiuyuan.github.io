@@ -87,7 +87,7 @@ const Component = () => {
   )
 };
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/useEffect1.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/useEffect1.gif?raw=true)
 
 上面代码可以看出，每个`React`组件初始化时，`DOM`都会渲染一次，`useEffect`在渲染结束后执行，如果 `useEffect` 第二个参数数组内的值发生了变化，那么 `useEffect` 第一个参数的回调将会被再执行一遍。
 
@@ -136,7 +136,7 @@ const Component = () => {
 }
 
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/effect.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/effect.gif?raw=true)
 
 如果第二个参数为空，那么在每一个 State 变化时都会执行该副作用,注意这里说的参数为空是说不传递第二个参数，而不是上面说的参数为空数组
 
@@ -154,7 +154,7 @@ const Components = () => {
   );
 };
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/effectEmpty.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/effectEmpty.gif?raw=true)
 ```javascript
 import React, { useState, useEffect } from "react";
 import { Button, message } from "antd";
@@ -215,7 +215,7 @@ const Component = () => {
   }
 
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/memo1.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/memo1.gif?raw=true)
 
 可以看到useMemo 与 useCallback 很像，只有依赖值改变才会重新调用函数，useMemo 也能针对传入子组件的值进行缓存优化。前面说过返回值可以是任何类型，因此，如果我们将函数的返回值替换为一个组件，那么就可以实现对组件挂载/重新挂载的性能优化。
 
@@ -246,7 +246,7 @@ const Component = () => {
   };
 
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/memo2.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/memo2.gif?raw=true)
 
 ## useCallback
 官方文档：
@@ -293,7 +293,7 @@ const Component = () => {
     );
   }
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/cb1.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/cb1.gif?raw=true)
 
 可以看出当点击`trdChild`的时候只会更新`trdChild`，而当点击`firstChild`和`secChild`的时候，更新当前点击的组件同时会更新`trdChild`，这就表示当其他组件更新的时候会导致`trdChild`重新渲染。
 
@@ -340,7 +340,7 @@ const Component = () => {
   }
 
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/cb2.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/cb2.gif?raw=true)
 
 可以看到当`useCallback`的依赖参数为一个空数组，代表着这个方法没有依赖值，将不会被更新。且由于`useCallback`自带闭包，函数内`val1`一直都是`0`。
 
@@ -378,7 +378,7 @@ useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传�
     );
   }
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/ref.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/ref.gif?raw=true)
 
 可以看出`useRef` 配合  `useEffect` 可以实现 `preProps` 的功能。 这是因为`useRef`保存的变量不会随着每次数据的变化重新生成，而是保持在我们最后一次赋值时的状态。
 ```javascript
@@ -396,7 +396,7 @@ useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传�
     );
   }
 ```
-![img](https://github.com/workerxuan/workerxuan.github.io/blob/master/assets/react/ref2.gif?raw=true)
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/react/ref2.gif?raw=true)
 
 代码中`useRef`创建了`inputEl`，并赋给了`input`的`ref`属性，点击 `button` 的时候`inputEl.current.focus()` 使`input` 获取焦点。
 
