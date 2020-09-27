@@ -3,11 +3,13 @@
 ## 前言
 
 汇总作者学习总结的前端博文，供大家一起交流学习，如果喜欢或者有所启发，请帮忙给个 Star ~，对作者也是一种鼓励。
+## JS 系列
+1. [js手写系列](https://github.com/xiuyuan66/xiuyuan.github.io/issues/3)
 
-## Vue 系列目录
+## Vue 系列
 1. [Vue 发布-订阅模式](https://github.com/xiuyuan66/xiuyuan.github.io/issues/1)
 
-## React 系列目录
+## React 系列
 
 1. [浅谈React Hooks](https://github.com/xiuyuan66/xiuyuan.github.io/issues/2)
 
