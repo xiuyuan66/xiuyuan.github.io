@@ -1,3 +1,5 @@
+# Diff算法
+`Diff`算法的前提是发生在相同层级，对比新旧vnode子节点，简化复杂度，时间复杂度为O(n)。
 组件更新调用`vm._update`,它的定义在 `src/core/instance/lifecycle.js` 中：
 ```javascript
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
@@ -245,9 +247,21 @@
 
 ![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff.png?raw=true)
 
-首先进行旧头新头比较，都是A，所以双方头部索引向右移
+首先进行旧头新头比较，都是`A`，所以双方头部索引向右移
 
 ![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff1.png?raw=true)
+
+旧头新头再继续比较，发现不一样，`B!==C`,所以进入旧尾新尾比较，`D===D`,双方尾部索引向左移
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff2.png?raw=true)
+
+现在进入新的循环，旧头新头比较，`B!==C`,旧尾新尾比较，`C!==E`,进入头尾交叉比较，先进行旧尾新头比较`C===C`,旧尾索引左移，新头索引右移
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff3.png?raw=true)
+
+紧接着再进入新一轮的循环，旧头新头比较，`B!==F`,旧尾新尾比较，`B!==E`,头尾交叉比较，`B!==E`,`B!==F`,四种都不相同，这个时候需要通过`key`去比对，然后将新头右移，重复循环直至任一头部索引大于尾部索引，循环结束。
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff4.png?raw=true)
 
 上述循环结束后，可能存在未处理的vnode
 - `oldStartIdx > oldEndIdx`,说明`oldCh`先处理完，`newCh`还有未处理完的，添加`newCh`中未处理的节点
