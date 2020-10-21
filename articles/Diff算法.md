@@ -221,3 +221,25 @@
     }
   }
 ```
+
+具体`diff`过程分析：
+
+保存四个变量`oldStartIdx`、`oldEndIdx`、`newStartIdx`、`newEndIdx`来作为遍历的索引，当`oldCh` 或者 `newCh`的`startIndex > endIndex`，循环结束。
+
+接下来我们来一一分析：
+
+- 旧头新头比较：对新旧两个头部进行比较，如果相同，继续进行`patchVnode`操作，头部索引向右移动
+- 旧尾新尾比较：对新旧两个尾部部进行比较，如果相同，继续进行`patchVnode`操作，尾部索引向左移动
+- 旧头新尾比较：头尾交叉进行比较，如果相同，继续进行`patchVnode`操作，旧头索引向右移动，新尾索引向左移动
+- 旧尾新头比较：头尾交叉进行比较，如果相同，继续进行`patchVnode`操作，旧尾索引向左移动，新头索引向右移动
+- 4 个 vnode 都不相同，那么我们就要利用key对比：
+    * 从 `oldCh` 数组建立 `key --> index` 的 map映射。
+    * 只处理 `newStartVnode` （简化逻辑，有循环我们最终还是会处理到所有 `vnode`），通过它的 `key` 从上面的 `map` 里拿到 `index`；
+    * 如果 `index` 不存在，那么说明 `newStartVnode` 是全新的 `vnode`，直接
+        创建对应的 `dom` 并插入。
+    * 如果 `index` 存在，并且是相同的节点，继续进行`patchVnode`操作，再执行`insertBefore`插入相应位置的真实`dom`节点；
+    * 如果 `index` 存在，并且是不同的节点，直接
+        创建对应的 `dom` 并插入；
+    
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff.png?raw=true)
