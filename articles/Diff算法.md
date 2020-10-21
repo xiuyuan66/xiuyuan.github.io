@@ -240,6 +240,16 @@
     * 如果 `index` 存在，并且是相同的节点，继续进行`patchVnode`操作，再执行`insertBefore`插入相应位置的真实`dom`节点；
     * 如果 `index` 存在，并且是不同的节点，直接
         创建对应的 `dom` 并插入；
-    
+
+我们再通过示意图来理解以上过程：
 
 ![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff.png?raw=true)
+
+首先进行旧头新头比较，都是A，所以双方头部索引向右移
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff1.png?raw=true)
+
+上述循环结束后，可能存在未处理的vnode
+- `oldStartIdx > oldEndIdx`,说明`oldCh`先处理完，`newCh`还有未处理完的，添加`newCh`中未处理的节点
+- `newStartIdx > newEndIdx`,说明`oldCh`未处理完，删除(`oldCh`中对应的)多余的dom
+
