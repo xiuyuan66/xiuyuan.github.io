@@ -1,6 +1,20 @@
 # Diff算法
 `Diff`算法的前提是发生在相同层级，对比新旧vnode子节点，简化复杂度，时间复杂度为O(n)。
-组件更新调用`vm._update`,它的定义在 `src/core/instance/lifecycle.js` 中：
+
+下面用一张示例图来展示：
+
+![img](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/diff5.png?raw=true)
+
+图上同颜色线框会进行比较：
+- 首先比较最上层`a`节点，由于新旧`vnode`树都是`a`，才会继续对其子节点进行比较
+- 然后比较第二层节点，新`vnode`树中是节点`b`和`c`,旧`vnode`树是节点`b`和`g`,则会删除节点`g`，添加节点`c`,由于拥有相同的节点`b`，继续对`b`节点的子节点进行比较
+- 最后比较第三层节点，新`vnode`树中只有`d`节点，则删除旧`vnode`树中`e`节点
+
+最后我们可以得知只会在相同层级进行`Diff`,只有在相同层级且相同的情况下才会对其子节点进行比较，多余的相同层级节点只会作删除或添加操作
+
+## 源码分析
+当响应式数据发生改变时，set方法会让调用Dep.notify通知所有订阅者Watcher，订阅者就会调用patch给真实的DOM打补丁，更新相应的视图。
+直接从更新方法`vm._update`开始分析,它的定义在 `src/core/instance/lifecycle.js` 中：
 ```javascript
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this //缓存vue实例
@@ -17,7 +31,88 @@
     //...
   }
 ```
-每次组件更新时，都会先判断有没有旧`VNode`，没有就传入真实的`dom`节点直接执行`vm.__patch__`，否则传入`prevVnode`和`vnode`进行diff，完成更新工作。
+每当响应式数据发生改变时，都会先判断有没有旧`VNode`，没有就传入真实的`dom`节点直接执行`vm.__patch__`，否则传入`prevVnode`和`vnode`进行diff，完成更新工作。
+
+上面`_update`函数中有个`VNode`的参数，在 `Vue.js` 中，`Virtual DOM` 是用 `VNode` 这个 `Class` 去描述，我们看看源码是怎么定义的，它定义在 `src/core/vdom/vnode.js` 中：
+```javascript
+export default class VNode {
+  tag: string | void;
+  data: VNodeData | void;
+  children: ?Array<VNode>;
+  text: string | void;
+  elm: Node | void;
+  ns: string | void;
+  context: Component | void; // rendered in this component's scope
+  key: string | number | void;
+  componentOptions: VNodeComponentOptions | void;
+  componentInstance: Component | void; // component instance
+  parent: VNode | void; // component placeholder node
+
+  // strictly internal
+  raw: boolean; // contains raw HTML? (server only)
+  isStatic: boolean; // hoisted static node
+  isRootInsert: boolean; // necessary for enter transition check
+  isComment: boolean; // empty comment placeholder?
+  isCloned: boolean; // is a cloned node?
+  isOnce: boolean; // is a v-once node?
+  asyncFactory: Function | void; // async component factory function
+  asyncMeta: Object | void;
+  isAsyncPlaceholder: boolean;
+  ssrContext: Object | void;
+  fnContext: Component | void; // real context vm for functional nodes
+  fnOptions: ?ComponentOptions; // for SSR caching
+  devtoolsMeta: ?Object; // used to store functional render context for devtools
+  fnScopeId: ?string; // functional scope id support
+
+  constructor (
+    tag?: string,
+    data?: VNodeData,
+    children?: ?Array<VNode>,
+    text?: string,
+    elm?: Node,
+    context?: Component,
+    componentOptions?: VNodeComponentOptions,
+    asyncFactory?: Function
+  ) {
+    this.tag = tag
+    this.data = data
+    this.children = children
+    this.text = text
+    this.elm = elm
+    this.ns = undefined
+    this.context = context
+    this.fnContext = undefined
+    this.fnOptions = undefined
+    this.fnScopeId = undefined
+    this.key = data && data.key
+    this.componentOptions = componentOptions
+    this.componentInstance = undefined
+    this.parent = undefined
+    this.raw = false
+    this.isStatic = false
+    this.isRootInsert = true
+    this.isComment = false
+    this.isCloned = false
+    this.isOnce = false
+    this.asyncFactory = asyncFactory
+    this.asyncMeta = undefined
+    this.isAsyncPlaceholder = false
+  }
+
+  // DEPRECATED: alias for componentInstance for backwards compat.
+  /* istanbul ignore next */
+  get child (): Component | void {
+    return this.componentInstance
+  }
+}
+```
+这里我们只需要了解几个核心的属性就行了，例如：
+- `tag` 属性即节点标签属性
+- `data` 属性是一个存储节点属性的对象，节点上的`class`，`style`以及绑定的事件
+- `children` 属性是`vnode`的子节点集合，每个子结点也是`vnode`结构
+- `text` 属性是文本节点
+- `elm` 属性为这个`vnode`对应的真实`dom`节点的引用
+- `key` 属性是`vnode`的标记，在`diff`过程中对比`key`可以提高`diff`的效率
 
 接着看`vm.__patch__`，`vm.__patch__` 方法定义在 `src/core/vdom/patch.js` 中：
 ```javascript
@@ -266,4 +361,9 @@
 上述循环结束后，可能存在未处理的vnode
 - `oldStartIdx > oldEndIdx`,说明`oldCh`先处理完，`newCh`还有未处理完的，添加`newCh`中未处理的节点
 - `newStartIdx > newEndIdx`,说明`oldCh`未处理完，删除(`oldCh`中对应的)多余的dom
+  
+## 参考文献
+- [解析vue2.0的diff算法](https://github.com/aooy/blog/issues/2)
+- [详解vue的diff算法](https://juejin.im/post/6844903607913938951#heading-3) 
+- [深入剖析：Vue核心之虚拟DOM](https://github.com/fengshi123/blog/issues/10) 
 
