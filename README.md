@@ -8,6 +8,7 @@
 
 ## Vue 系列
 1. [Vue 发布-订阅模式](https://github.com/xiuyuan66/xiuyuan.github.io/issues/1)
+2. [浅谈Vue的Diff算法](https://github.com/xiuyuan66/xiuyuan.github.io/issues/4)
 
 ## React 系列
 
