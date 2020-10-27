@@ -607,16 +607,30 @@ methodsToPatch.forEach(function (method) {
         break
     }
     if (inserted) ob.observeArray(inserted)
-    // notify change
+    // 通知改变
     ob.dep.notify()
     return result
   })
 })
 ```
-是让 value对象参数指向了 arrayMethods 原型上的方法，然后我们使用 Obejct.defineProperty去监听数组中的原型方法，当我们在data对象参数arrs中调用数组方法，比如push，unshift等方法就可以理解为映射到 arrayMethods 原型上，因此会被 Object.defineProperty方法监听到。因此会执行对应的set/get方法。
+结合之前的`protoAugment(value, arrayMethods)`方法，目的是让 `value`对象参数指向了 `arrayMethods` 原型上的方法，然后我们使用 `Obejct.defineProperty`去监听数组中的原型方法，当我们在`data`对象参数调用数组方法，比如`push，unshift`等方法就可以理解为映射到 `arrayMethods` 原型上，因此会被 `Object.defineProperty`方法监听到。因此会执行对应的`set/get`方法。
 
-如上 methodsToPatch.forEach(function (method) { } 代码中，为什么针对 方法为 'push, unshift, splice' 等一些数组新增的元素也会调用 ob.observeArray(inserted) 进行响应性变化。inserted 参数为一个数组。也就是说我们不仅仅对data现有的元素进行响应性监听，还会对数组中一些新增删除的元素也会进行响应性监听。...args运算符会转化为数组。
-**（5）defineReactive**
+如上 `if (inserted) ob.observeArray(inserted)` 代码中，为什么针对 方法为 `push, unshift, splice` 等一些数组新增的元素也会调用 `ob.observeArray(inserted)` 进行响应性变化，`inserted` 参数为一个数组。也就是说我们不仅仅对`data`现有的元素进行响应性监听，还会对数组中一些新增删除的元素也会进行响应性监听。...`args`运算符会转化为数组。
+
+如果 `hasProto`为`false`， 也就是说浏览器不支持`__proto__`这个属性的话，我们就会调用`copyAugment(value, arrayMethods, arrayKeys)` 方法去处理，源码如下：
+
+```javascript
+const arrayKeys = Object.getOwnPropertyNames(arrayMethods)//["push", "shift", "unshift", "pop", "splice", "reverse", "sort"]
+function copyAugment (target: Object, src: Object, keys: Array<string>) {
+  for (let i = 0, l = keys.length; i < l; i++) {
+    const key = keys[i]
+    def(target, key, src[key])
+  }
+}
+```
+如上可以看到，对数组的方法进行遍历，然后调用`def`方法进行监听，对于`def`方法前面已经解释过了，这里不再赘述，回到`Observer`实例中，如果不是数组，调用`walk` 方法，而`walk` 方法是遍历对象的 `key` 调用 `defineReactive` 方法，接下来我们看下`defineReactive`方法。
+
+**defineReactive**
 
 `defineReactive` 的功能就是定义一个响应式对象，给对象动态添加 `getter` 和 `setter`，它的定义在 `src/core/observer/index.js` 中： 
 
@@ -629,29 +643,35 @@ export function defineReactive (
   shallow?: boolean
 ) {
   const dep = new Dep()
-
+  // 获取属性自身的描述符
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
   }
 
-  // cater for pre-defined getter/setters
+  /*
+   检查属性之前是否设置了 getter / setter
+   如果设置了，则在之后的 get/set 方法中执行 设置了的 getter/setter
+  */
   const getter = property && property.get
   const setter = property && property.set
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
 
-  let childOb = !shallow && observe(val)
+  let childOb = !shallow && observe(val)//递归循环该val, 判断是否还有子对象，如果还有子对象的话，就继续实列化该value，
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
+      // 如果属性原本拥有getter方法的话则执行该方法
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
         dep.depend()
         if (childOb) {
+          // 如果有子对象的话，对子对象进行依赖收集
           childOb.dep.depend()
+          // 如果value是数组的话，则递归调用
           if (Array.isArray(value)) {
             dependArray(value)
           }
@@ -660,6 +680,10 @@ export function defineReactive (
       return value
     },
     set: function reactiveSetter (newVal) {
+      /*
+       如果属性原本拥有getter方法则执行。然后获取该值与newValue对比，如果相等的
+       话，直接return，否则的值，执行赋值。
+      */
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
       if (newVal === value || (newVal !== newVal && value !== value)) {
@@ -672,18 +696,22 @@ export function defineReactive (
       // #7981: for accessor properties without setter
       if (getter && !setter) return
       if (setter) {
+        // 如果属性原本拥有setter方法的话则执行
         setter.call(obj, newVal)
       } else {
+        // 如果属性原本没有setter方法则直接赋新值
         val = newVal
       }
+      // 继续判断newVal是否还有子对象，如果有子对象的话，继续递归循环遍历
       childOb = !shallow && observe(newVal)
+      // 有值发生改变的话，我们需要通知所有的订阅者
       dep.notify()
     }
   })
 }
 ```
 
-`defineReactive` 函数最开始初始化 `Dep` 对象的实例，接着拿到 `obj` 的属性描述符，然后对子对象递归调用 `observe` 方法，这样就保证了无论 `obj` 的结构多复杂，它的所有子属性也能变成响应式的对象，这样我们访问或修改 `obj` 中一个嵌套较深的属性，也能触发 getter 和 setter。 
+`defineReactive` 函数最开始初始化 `Dep` 对象的实例，接着拿到 `obj` 的属性描述符，然后对子对象递归调用 `observe` 方法，这样就保证了无论 `obj` 的结构多复杂，它的所有子属性也能变成响应式的对象，这样我们访问或修改 `obj` 中一个嵌套较深的属性，也能触发 getter 和 setter，最后利用`Object.defineProperty`给`key`添加`getter` 和 `setter`,`getter`做的事情是依赖收集，`setter` 做的事情是派发更新，。 
 
 ### 6.2、订阅器 Dep 实现
 
@@ -710,6 +738,7 @@ export default class Dep {
 
   depend () {
     if (Dep.target) {
+      // Watcher也收集Dep
       Dep.target.addDep(this)
     }
   }
@@ -732,7 +761,20 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
+
+// Dep.target设置，同一时间只能有一个全局的 `Watcher` 被计算
 Dep.target = null
+const targetStack = []
+
+export function pushTarget (target: ?Watcher) {
+  targetStack.push(target)
+  Dep.target = target
+}
+
+export function popTarget () {
+  targetStack.pop()
+  Dep.target = targetStack[targetStack.length - 1]
+}
 ```
 
 `Dep` 是一个 `Class`，它定义了一些属性和方法，这里需要特别注意的是它有一个静态属性 `target`，这是一个全局唯一 `Watcher`，这是一个非常巧妙的设计，因为在同一时间只能有一个全局的 `Watcher` 被计算，另外它的自身属性 `subs` 也是 `Watcher` 的数组。`Dep` 实际上就是对 `Watcher` 的一种管理，`Dep` 脱离 `Watcher` 单独存在是没有意义的。
@@ -813,13 +855,160 @@ export default class Watcher {
       ? undefined
       : this.get()
   }
-   。。。。。。
+
+  /**
+   * Evaluate the getter, and re-collect dependencies.
+   */
+  get () {
+    // 设置Dep.target
+    pushTarget(this)
+    let value
+    const vm = this.vm
+    try {
+      value = this.getter.call(vm, vm)
+    } catch (e) {
+      if (this.user) {
+        handleError(e, vm, `getter for watcher "${this.expression}"`)
+      } else {
+        throw e
+      }
+    } finally {
+      // "touch" every property so they are all tracked as
+      // dependencies for deep watching
+      if (this.deep) {
+        traverse(value)
+      }
+      popTarget()
+      this.cleanupDeps()
+    }
+    return value
+  }
+
+  /**
+   * Add a dependency to this directive.
+   */
+  addDep (dep: Dep) {
+    const id = dep.id
+    if (!this.newDepIds.has(id)) {
+      this.newDepIds.add(id)
+      this.newDeps.push(dep)
+      if (!this.depIds.has(id)) {
+        // dep增加Watcher
+        dep.addSub(this)
+      }
+    }
+  }
+
+  /**
+   * Clean up for dependency collection.
+   */
+  cleanupDeps () {
+    let i = this.deps.length
+    while (i--) {
+      const dep = this.deps[i]
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this)
+      }
+    }
+    let tmp = this.depIds
+    this.depIds = this.newDepIds
+    this.newDepIds = tmp
+    this.newDepIds.clear()
+    tmp = this.deps
+    this.deps = this.newDeps
+    this.newDeps = tmp
+    this.newDeps.length = 0
+  }
+
+  /**
+   * Subscriber interface.
+   * Will be called when a dependency changes.
+   */
+  update () {
+    /* istanbul ignore else */
+    if (this.lazy) {
+      this.dirty = true
+    } else if (this.sync) {
+      this.run()
+    } else {
+      queueWatcher(this)
+    }
+  }
+
+  /**
+   * Scheduler job interface.
+   * Will be called by the scheduler.
+   */
+  run () {
+    if (this.active) {
+      const value = this.get()
+      if (
+        value !== this.value ||
+        // Deep watchers and watchers on Object/Arrays should fire even
+        // when the value is the same, because the value may
+        // have mutated.
+        isObject(value) ||
+        this.deep
+      ) {
+        // set new value
+        const oldValue = this.value
+        this.value = value
+        if (this.user) {
+          try {
+            this.cb.call(this.vm, value, oldValue)
+          } catch (e) {
+            handleError(e, this.vm, `callback for watcher "${this.expression}"`)
+          }
+        } else {
+          this.cb.call(this.vm, value, oldValue)
+        }
+      }
+    }
+  }
+
+  /**
+   * Evaluate the value of the watcher.
+   * This only gets called for lazy watchers.
+   */
+  evaluate () {
+    this.value = this.get()
+    this.dirty = false
+  }
+
+  /**
+   * Depend on all deps collected by this watcher.
+   */
+  depend () {
+    let i = this.deps.length
+    while (i--) {
+      this.deps[i].depend()
+    }
+  }
+
+  /**
+   * Remove self from all dependencies' subscriber list.
+   */
+  teardown () {
+    if (this.active) {
+      // remove self from vm's watcher list
+      // this is a somewhat expensive operation so we skip it
+      // if the vm is being destroyed.
+      if (!this.vm._isBeingDestroyed) {
+        remove(this.vm._watchers, this)
+      }
+      let i = this.deps.length
+      while (i--) {
+        this.deps[i].removeSub(this)
+      }
+      this.active = false
+    }
+  }
 }
 ```
 
-`Watcher` 是一个 `Class`，在它的构造函数中，定义了一些和 `Dep` 相关的属性 ，其中，`this.deps` 和 `this.newDeps` 表示 `Watcher` 实例持有的 `Dep` 实例的数组；而 `this.depIds` 和 `this.newDepIds` 分别代表 `this.deps` 和 `this.newDeps` 的 `id` Set 。
+`Watcher` 是一个 `Class`，在它的构造函数中，定义了一些和 `Dep` 相关的属性 ，其中，`this.deps` 和 `this.newDeps` 表示 `Watcher` 实例持有的 `Dep` 实例的数组；而 `this.depIds` 和 `this.newDepIds` 分别代表 `this.deps` 和 `this.newDeps` 的 `id` `Set`数据结构 。
 
-**（1）过程分析**
+**过程分析**
 
 当我们去实例化一个渲染 `watcher` 的时候，首先进入 `watcher` 的构造函数逻辑，然后会执行它的 `this.get()` 方法，进入 `get` 函数，首先会执行： 
 
@@ -835,24 +1024,69 @@ value = this.getter.call(vm, vm)
 
 这个时候就触发了数据对象的 `getter` 。
 
-么每个对象值的 `getter` 都持有一个 `dep`，在触发 `getter` 的时候会调用 `dep.depend()` 方法，也就会执行 `Dep.target.addDep(this)`。
+然而每个对象值的 `getter` 都持有一个 `dep`，在触发 `getter` 的时候会调用 `dep.depend()` 方法，也就会执行 `Dep.target.addDep(this)`。
 
 刚才我们提到这个时候 `Dep.target` 已经被赋值为渲染 `watcher`，那么就执行到 `addDep` 方法：
 
-```
+```javascript
 addDep (dep: Dep) {
   const id = dep.id
   if (!this.newDepIds.has(id)) {
     this.newDepIds.add(id)
     this.newDeps.push(dep)
     if (!this.depIds.has(id)) {
+      // dep增加Watcher
       dep.addSub(this)
     }
   }
 }
 ```
 
-这时候会做一些逻辑判断（保证同一数据不会被添加多次）后执行 `dep.addSub(this)`，那么就会执行 `this.subs.push(sub)`，也就是说把当前的 `watcher` 订阅到这个数据持有的 `dep` 的 `subs` 中，这个目的是为后续数据变化时候能通知到哪些 `subs` 做准备。所以在 `vm._render()` 过程中，会触发所有数据的 `getter`，这样实际上已经完成了一个依赖收集的过程。
+这时候会做一些逻辑判断（保证同一数据不会被添加多次）后执行 `dep.addSub(this)`，那么就会执行 `this.subs.push(sub)`，也就是说把当前的 `watcher` 订阅到这个数据持有的 `dep` 的 `subs` 中，这个目的是为后续数据变化时候能通知到哪些 `subs` 做准备。所以在 `vm._render()` 过程中，会触发所有数据的 `getter`，这样实际上已经完成了一个依赖收集的过程。在完成依赖收集后，还有几个逻辑要执行，首先是：
+
+```javascript
+if (this.deep) {
+  traverse(value)
+}
+```
+这个是要递归去访问 `value`，触发它所有子项的 `getter`。接下来执行：
+
+```javascript
+popTarget()
+```
+`popTarget` 的定义在 `src/core/observer/dep.js` 中：
+```javascript
+export function popTarget () {
+  targetStack.pop()
+  Dep.target = targetStack[targetStack.length - 1]
+}
+```
+实际上就是把 `Dep.target` 恢复成上一个状态，因为当前 `vm` 的数据依赖收集已经完成，那么对应的渲染`Dep.target` 也需要改变。最后执行：
+```javascript
+this.cleanupDeps()
+```
+这里主要是清空依赖，下面详细分析一下源码过程：
+```javascript
+cleanupDeps () {
+    let i = this.deps.length
+    while (i--) {
+      const dep = this.deps[i]
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this)
+      }
+    }
+    let tmp = this.depIds
+    this.depIds = this.newDepIds
+    this.newDepIds = tmp
+    this.newDepIds.clear()
+    tmp = this.deps
+    this.deps = this.newDeps
+    this.newDeps = tmp
+    this.newDeps.length = 0
+  }
+```
+`Watcher` 在构造函数中会初始化 2 个 `Dep` 实例数组，`newDeps` 表示新添加的 `Dep` 实例数组，而 `deps` 表示上一次添加的 `Dep` 实例数组。
+在执行 `cleanupDeps` 函数的时候，会首先遍历 `deps`，移除对 `dep.subs` 数组中 `Wathcer` 的订阅，然后把 `newDepIds` 和 `depIds` 交换，`newDeps` 和 `deps` 交换，并把 `newDepIds` 和 `newDeps` 清空。`Vue` 设计了在每次添加完新的订阅，会移除掉旧的订阅。
 
 当我们在组件中对响应的数据做了修改，就会触发 `setter` 的逻辑，最后调用 `watcher` 中的 `update` 方法： 
 
