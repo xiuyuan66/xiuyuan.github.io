@@ -135,6 +135,46 @@ function flushCallbacks () {
 
 接下来代码做了四个判断：对当前环境进行不断的降级处理，尝试使用原生的`Promise.then`、`MutationObserver`和`setImmediate`，上述三个都不支持最后使用`setTimeout`；降级处理的目的都是将`flushCallbacks`函数放入微任务或者宏任务，等待下一次事件循环时来执行。
 
-`timerFunc`: 保存需要被执行的函数。
 
-**Promise.then**
+
+**MutationObserver**
+
+`MutationObserver` 中文含义可以理解为 "变动观察器"。它是监听`DOM`变动的接口，`DOM`发生任何变动，`MutationObserver`会得到通知。在`Vue`中是通过该属性来监听`DOM`更新完毕的。
+
+它和事件类似，但有所不同，事件是同步的，当`DOM`发生变动时，事件会立刻处理，但是 `MutationObserver` 则是异步的，它不会立即处理，而是等页面上所有的`DOM`完成后，会执行一次，如果页面上要操作100次`DOM`的话，如果是事件的话会监听100次`DOM`，但是我们的 `MutationObserver` 只会执行一次，它是等待所有的`DOM`操作完成后，再执行。
+
+**它的特点是：**
+
+-  等待所有脚本任务完成后，才会执行，即采用异步方式。
+-  DOM的变动记录会封装成一个数组进行处理。
+-  还可以观测发生在DOM的所有类型变动，也可以观测某一类变动。
+
+当然 MutationObserver 也是有浏览器兼容的，我们可以使用如下代码来检测浏览器是否支持该属性，如下代码:
+
+```javascript
+let MutationObserver = window.MutationObserver || window.WebkitMutationObserver || window.MozMutationObserver;
+// 监测浏览器是否支持
+let observeMutationSupport = !!MutationObserver;
+```
+首先我们要使用 MutationObserver 构造函数的话，我们先要实例化 MutationObserver 构造函数，同时我们要指定该实列的回调函数，如下代码：
+
+```javascript
+let observer = new MutationObserver(callback);
+```
+
+观察器`callback`回调函数会在每次`DOM`发生变动后调用，它接收2个参数，第一个是变动的数组，第二个是观察器的实例。
+
+**MutationObserver 实例的方法**
+
+`observe()` 该方法是要观察`DOM`节点的变动的。该方法接收2个参数，第一个参数是要观察的`DOM`元素，第二个是要观察的变动类型。
+
+调用方式为：`observer.observe(dom, options)`;
+
+`options` 类型有如下：
+
+`childList`: 子节点的变动。
+`attributes`: 属性的变动。
+`characterData`: 节点内容或节点文本的变动。
+`subtree`: 所有后代节点的变动。
+
+需要观察哪一种变动类型，需要在`options`对象中指定为`true`即可; 但是如果设置`subtree`的变动，必须同时指定`childList`, `attributes`, 和 `characterData` 中的一种或多种。
