@@ -1339,27 +1339,24 @@ updateComponent = () => {
 
 所以这就是当我们去修改组件相关的响应式数据的时候，会触发组件重新渲染的原因，接着就会重新执行 `patch` 的过程，但它和首次渲染有所不同。
 
-###  6.4、Vue 数据双向绑定原理图
+### Vue 数据双向绑定原理图
 
 以上主要分析了 Vue 数据双向绑定的关键代码，其原理图可以表示如下：
 
-![4.png](https://github.com/fengshi123/blog/blob/master/assets/mvvm/4.png?raw=true)  
+![4.png](https://github.com/xiuyuan66/xiuyuan.github.io/blob/master/assets/vue/mvvm/4.png?raw=true)  
 
 
 
-## 七、总结
+## 总结
 
 本文通过监听器 `Observer` 、订阅器 `Dep` 、订阅者 `Watcher` 和解析器 ·的实现，模拟初始化一个 `Vue` 实例，帮助大家了解数据双向绑定的基本原理。接着，从 `Vue` 源码层面介绍了 `Vue` 数据双向绑定的实现过程，了解 `Vue` 源码的实现逻辑，从而巩固加深对数据双向绑定的理解认识。希望本文对您有帮助。
-
-**github地址为：github.com/fengshi123/…，上面汇总了作者所有的博客文章，如果喜欢或者有所启发，请帮忙给个 star ~，对作者也是一种鼓励。**
-
 
 
 ## 参考文献
 
-1、Vue 的双向绑定原理及实现：<https://www.cnblogs.com/canfoo/p/6891868.html> 
+- [0 到 1 掌握：Vue 核心之数据双向绑定](https://juejin.im/post/6844903903822086151)
 
-2、Vue 技术揭秘：<https://ustbhuangyi.github.io/vue-analysis/> 
+- [Vue 技术揭秘](https://ustbhuangyi.github.io/vue-analysis/)
 
  
 
