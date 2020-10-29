@@ -178,3 +178,32 @@ let observer = new MutationObserver(callback);
 `subtree`: 所有后代节点的变动。
 
 需要观察哪一种变动类型，需要在`options`对象中指定为`true`即可; 但是如果设置`subtree`的变动，必须同时指定`childList`, `attributes`, 和 `characterData` 中的一种或多种。
+
+### 实现一个简易的nextTick
+
+```javascript
+// 存储回调函数
+let callbacks = [];
+// 代表等待状态的标志位
+let pending = false;
+
+function nextTick (cb) {
+    callbacks.push(cb);
+
+    if (!pending) {
+        pending = true;
+        setTimeout(flushCallbacks, 0);
+    }
+}
+
+function flushCallbacks () {
+    pending = false;
+    const copies = callbacks.slice(0);
+    callbacks.length = 0;
+    for (let i = 0; i < copies.length; i++) {
+        copies[i]();
+    }
+}
+
+```
+根据源码实现一个简易版，先定义一个`callbacks`存储`nextTick`的回调函数，`pending`是一个标记位，代表等待的状态，然后在`nextTick`里面利用`setTimeout`创建异步任务，`setTimeout` 会在 `task` 中创建一个事件 `flushCallbacks` ，`flushCallbacks` 则会在执行时将 `callbacks` 中的所有 `cb` 依次执行。
