@@ -207,3 +207,9 @@ function flushCallbacks () {
 
 ```
 根据源码实现一个简易版，先定义一个`callbacks`存储`nextTick`的回调函数，`pending`是一个标记位，代表等待的状态，然后在`nextTick`里面利用`setTimeout`创建异步任务，`setTimeout` 会在 `task` 中创建一个事件 `flushCallbacks` ，`flushCallbacks` 则会在执行时将 `callbacks` 中的所有 `cb` 依次执行。
+
+## 参考文献
+
+- [Vue系列---理解Vue.nextTick使用及源码分析(五)](https://www.cnblogs.com/tugenhua0707/p/11756584.html#_labe4)
+
+- [Vue.js异步更新及nextTick](https://juejin.im/post/6844903666420318216)
